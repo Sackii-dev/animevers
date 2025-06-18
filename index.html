@@ -1,205 +1,252 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AniVerse - Auth & Favoris</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
-<style>
-  body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 0 10px; }
-  input, button { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-  button { cursor: pointer; background: #6b46c1; color: white; border: none; border-radius: 4px; }
-  .hidden { display: none; }
-  ul { list-style: none; padding: 0; }
-  li { background: #eee; margin: 5px 0; padding: 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
-  .fav-anime { flex-grow: 1; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AniVerse - Auth & Favoris</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 0 10px;
+      background: #fafafa;
+    }
+    input, button {
+      padding: 10px;
+      margin: 8px 0;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 1rem;
+    }
+    button {
+      background: #6b46c1;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background: #553c9a;
+    }
+    .hidden { display: none; }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      background: #eee;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .fav-anime {
+      font-weight: bold;
+      flex-grow: 1;
+    }
+    a {
+      color: #6b46c1;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    a:hover {
+      color: #553c9a;
+    }
+    h1, h2, h3 {
+      color: #4a3f6a;
+    }
+  </style>
 </head>
 <body>
 
-<h1>AniVerse</h1>
+  <h1>AniVerse</h1>
 
-<div id="auth-section">
-  <!-- Connexion -->
-  <form id="login-form">
-    <h2>Connexion</h2>
-    <input type="email" id="login-email" placeholder="Email" required />
-    <input type="password" id="login-password" placeholder="Mot de passe" required />
-    <button type="submit">Se connecter</button>
-    <p>Pas encore de compte ? <a href="#" id="show-register">S'inscrire</a></p>
-  </form>
+  <div id="auth-section">
+    <!-- Connexion -->
+    <form id="login-form">
+      <h2>Connexion</h2>
+      <input type="email" id="login-email" placeholder="Email" required />
+      <input type="password" id="login-password" placeholder="Mot de passe" required />
+      <button type="submit">Se connecter</button>
+      <p>Pas encore de compte ? <a id="show-register">S'inscrire</a></p>
+    </form>
 
-  <!-- Inscription -->
-  <form id="register-form" class="hidden">
-    <h2>Inscription</h2>
-    <input type="email" id="register-email" placeholder="Email" required />
-    <input type="password" id="register-password" placeholder="Mot de passe" required />
-    <button type="submit">S'inscrire</button>
-    <p>Déjà un compte ? <a href="#" id="show-login">Se connecter</a></p>
-  </form>
-</div>
+    <!-- Inscription -->
+    <form id="register-form" class="hidden">
+      <h2>Inscription</h2>
+      <input type="email" id="register-email" placeholder="Email" required />
+      <input type="password" id="register-password" placeholder="Mot de passe" required />
+      <button type="submit">S'inscrire</button>
+      <p>Déjà un compte ? <a id="show-login">Se connecter</a></p>
+    </form>
+  </div>
 
-<div id="profile-section" class="hidden">
-  <h2>Profil</h2>
-  <p id="user-email"></p>
-  <button id="logout-btn">Se déconnecter</button>
+  <div id="profile-section" class="hidden">
+    <h2>Profil</h2>
+    <p id="user-email"></p>
+    <button id="logout-btn">Se déconnecter</button>
 
-  <h3>Ajouter un favori</h3>
-  <input type="text" id="new-fav-input" placeholder="ID de l'animé (ex: 1234)" />
-  <button id="add-fav-btn">Ajouter aux favoris</button>
+    <h3>Ajouter un favori</h3>
+    <input type="text" id="new-fav-input" placeholder="ID de l'animé (ex: 1234)" />
+    <button id="add-fav-btn">Ajouter aux favoris</button>
 
-  <h3>Mes favoris</h3>
-  <ul id="favorites-list"></ul>
-</div>
+    <h3>Mes favoris</h3>
+    <ul id="favorites-list"></ul>
+  </div>
 
-<script>
-  // Initialise Supabase
-  const supabaseUrl = 'https://supabase.com/dashboard/project/gqjygbsbrzzrsxrzylvz'; // <-- Remplace ici
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxanlnYnNicnp6cnN4cnp5bHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyNjc0OTgsImV4cCI6MjA2NTg0MzQ5OH0.PMqPYdlA9xRHFNkuswGz5hBVulIRFtm3BudPzitCTN0';          // <-- Remplace ici
-  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  <script>
+    // Initialise Supabase
+    const supabaseUrl = 'https://supabase.com/dashboard/project/gqjygbsbrzzrsxrzylvz'; // <-- Remplace ici
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxanlnYnNicnp6cnN4cnp5bHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyNjc0OTgsImV4cCI6MjA2NTg0MzQ5OH0.PMqPYdlA9xRHFNkuswGz5hBVulIRFtm3BudPzitCTN0';          // <-- Remplace ici
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-  // DOM Elements
-  const loginForm = document.getElementById('login-form');
-  const registerForm = document.getElementById('register-form');
-  const showRegisterLink = document.getElementById('show-register');
-  const showLoginLink = document.getElementById('show-login');
-  const authSection = document.getElementById('auth-section');
-  const profileSection = document.getElementById('profile-section');
-  const userEmailP = document.getElementById('user-email');
-  const logoutBtn = document.getElementById('logout-btn');
-  const newFavInput = document.getElementById('new-fav-input');
-  const addFavBtn = document.getElementById('add-fav-btn');
-  const favoritesList = document.getElementById('favorites-list');
+    // DOM Elements
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const showRegisterLink = document.getElementById('show-register');
+    const showLoginLink = document.getElementById('show-login');
+    const authSection = document.getElementById('auth-section');
+    const profileSection = document.getElementById('profile-section');
+    const userEmailP = document.getElementById('user-email');
+    const logoutBtn = document.getElementById('logout-btn');
+    const newFavInput = document.getElementById('new-fav-input');
+    const addFavBtn = document.getElementById('add-fav-btn');
+    const favoritesList = document.getElementById('favorites-list');
 
-  // Toggle forms
-  showRegisterLink.onclick = (e) => {
-    e.preventDefault();
-    loginForm.classList.add('hidden');
-    registerForm.classList.remove('hidden');
-  };
-  showLoginLink.onclick = (e) => {
-    e.preventDefault();
-    registerForm.classList.add('hidden');
-    loginForm.classList.remove('hidden');
-  };
+    // Toggle forms
+    showRegisterLink.onclick = (e) => {
+      e.preventDefault();
+      loginForm.classList.add('hidden');
+      registerForm.classList.remove('hidden');
+    };
+    showLoginLink.onclick = (e) => {
+      e.preventDefault();
+      registerForm.classList.add('hidden');
+      loginForm.classList.remove('hidden');
+    };
 
-  // Inscription
-  registerForm.onsubmit = async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) alert('Erreur inscription: ' + error.message);
-    else alert('Inscription réussie ! Vérifie ta boîte mail.');
-  };
+    // Inscription
+    registerForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('register-email').value;
+      const password = document.getElementById('register-password').value;
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) alert('Erreur inscription: ' + error.message);
+      else alert('Inscription réussie ! Vérifie ta boîte mail.');
+    };
 
-  // Connexion
-  loginForm.onsubmit = async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert('Erreur connexion: ' + error.message);
-    else {
-      alert('Connexion réussie !');
+    // Connexion
+    loginForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) alert('Erreur connexion: ' + error.message);
+      else {
+        alert('Connexion réussie !');
+        updateUI();
+      }
+    };
+
+    // Déconnexion
+    logoutBtn.onclick = async () => {
+      await supabase.auth.signOut();
       updateUI();
-    }
-  };
+    };
 
-  // Déconnexion
-  logoutBtn.onclick = async () => {
-    await supabase.auth.signOut();
-    updateUI();
-  };
+    // Ajouter un favori
+    addFavBtn.onclick = async () => {
+      const anime_id = newFavInput.value.trim();
+      if (!anime_id) {
+        alert("Entre l'ID d'un animé.");
+        return;
+      }
+      const { data: user, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !user) {
+        alert('Connecte-toi d’abord.');
+        return;
+      }
+      const { error } = await supabase
+        .from('favorites')
+        .insert([{ user_id: user.user.id, anime_id }]);
+      if (error) alert('Erreur ajout favori : ' + error.message);
+      else {
+        alert('Favori ajouté !');
+        newFavInput.value = '';
+        loadFavorites();
+      }
+    };
 
-  // Ajouter un favori
-  addFavBtn.onclick = async () => {
-    const anime_id = newFavInput.value.trim();
-    if (!anime_id) {
-      alert("Entre l'ID d'un animé.");
-      return;
-    }
-    const user = supabase.auth.getUser();
-    const { data: userData, error: userErr } = await user;
-    if (userErr || !userData) {
-      alert('Connecte-toi d’abord.');
-      return;
-    }
-    const { error } = await supabase
-      .from('favorites')
-      .insert([{ user_id: userData.user.id, anime_id }]);
-    if (error) alert('Erreur ajout favori : ' + error.message);
-    else {
-      alert('Favori ajouté !');
-      newFavInput.value = '';
-      loadFavorites();
-    }
-  };
+    // Charger favoris
+    async function loadFavorites() {
+      const { data: user, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !user) return;
+      const userId = user.user.id;
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('*')
+        .eq('user_id', userId);
+      if (error) {
+        alert('Erreur chargement favoris : ' + error.message);
+        return;
+      }
+      favoritesList.innerHTML = '';
+      if (data.length === 0) {
+        favoritesList.innerHTML = '<li>Pas encore de favoris.</li>';
+        return;
+      }
+      data.forEach(fav => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="fav-anime">${fav.anime_id}</span> 
+          <button data-id="${fav.id}">Supprimer</button>`;
+        favoritesList.appendChild(li);
+      });
 
-  // Charger favoris
-  async function loadFavorites() {
-    const userRes = await supabase.auth.getUser();
-    if (userRes.error || !userRes.data) return;
-    const userId = userRes.data.user.id;
-    const { data, error } = await supabase
-      .from('favorites')
-      .select('*')
-      .eq('user_id', userId);
-    if (error) {
-      alert('Erreur chargement favoris : ' + error.message);
-      return;
+      // Ajouter les événements supprimer
+      favoritesList.querySelectorAll('button').forEach(btn => {
+        btn.onclick = async () => {
+          const favId = btn.getAttribute('data-id');
+          const { error } = await supabase
+            .from('favorites')
+            .delete()
+            .eq('id', favId);
+          if (error) alert('Erreur suppression : ' + error.message);
+          else loadFavorites();
+        };
+      });
     }
-    favoritesList.innerHTML = '';
-    if (data.length === 0) {
-      favoritesList.innerHTML = '<li>Pas encore de favoris.</li>';
-      return;
+
+    // Mise à jour UI selon état de connexion
+    async function updateUI() {
+      const { data: user, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        // Non connecté
+        authSection.classList.remove('hidden');
+        profileSection.classList.add('hidden');
+        userEmailP.textContent = '';
+      } else {
+        // Connecté
+        authSection.classList.add('hidden');
+        profileSection.classList.remove('hidden');
+        userEmailP.textContent = 'Connecté en tant que : ' + user.user.email;
+        loadFavorites();
+      }
     }
-    data.forEach(fav => {
-      const li = document.createElement('li');
-      li.innerHTML = `<span class="fav-anime">${fav.anime_id}</span> 
-        <button data-id="${fav.id}">Supprimer</button>`;
-      favoritesList.appendChild(li);
+
+    // Écouteur état connexion (rafraîchir UI si changement)
+    supabase.auth.onAuthStateChange(() => {
+      updateUI();
     });
 
-    // Ajouter les événements supprimer
-    favoritesList.querySelectorAll('button').forEach(btn => {
-      btn.onclick = async () => {
-        const favId = btn.getAttribute('data-id');
-        const { error } = await supabase
-          .from('favorites')
-          .delete()
-          .eq('id', favId);
-        if (error) alert('Erreur suppression : ' + error.message);
-        else loadFavorites();
-      };
-    });
-  }
-
-  // Mise à jour UI selon état de connexion
-  async function updateUI() {
-    const userRes = await supabase.auth.getUser();
-    if (userRes.error || !userRes.data) {
-      // Non connecté
-      authSection.classList.remove('hidden');
-      profileSection.classList.add('hidden');
-      userEmailP.textContent = '';
-    } else {
-      // Connecté
-      authSection.classList.add('hidden');
-      profileSection.classList.remove('hidden');
-      userEmailP.textContent = 'Connecté en tant que : ' + userRes.data.user.email;
-      loadFavorites();
-    }
-  }
-
-  // Écouteur état connexion (rafraîchir UI si changement)
-  supabase.auth.onAuthStateChange((_event, session) => {
+    // Initialisation UI au chargement
     updateUI();
-  });
-
-  // Initialisation UI au chargement
-  updateUI();
-</script>
+  </script>
 
 </body>
 </html>
